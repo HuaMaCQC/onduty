@@ -1,4 +1,4 @@
-import { isArray, IsArray, } from "class-validator";
+import { IsArray, } from "class-validator";
 import { Type, Expose, } from "class-transformer";
 
 export class getOndutyData {

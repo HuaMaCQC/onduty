@@ -1,10 +1,7 @@
 import { GroupMember, getOnDutyType } from "./type";
-import  mariadb from "mariadb";
+import mariadb from "mariadb";
 import dayjs from "dayjs";
-
-// const maintain: Array<string> = ["2021-09-29", "2021-10-13", "2021-10-27"];
-// let startDay = "2021-09-23";
-// const endDay = "2021-10-31";
+import { DB } from "../../config"
 
 interface MemberData {
   id: number;
@@ -19,10 +16,10 @@ interface BeforeOnduty {
 
 export default class Data {
   private pool = mariadb.createPool({
-    host: "127.0.0.1",
-    user: "root",
-    password: "1234",
-    database: "on_duty",
+    host: DB.host,
+    user: DB.user,
+    password: DB.password,
+    database: DB.database,
     connectionLimit: 5,
   });
 
