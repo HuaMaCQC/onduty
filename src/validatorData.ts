@@ -1,8 +1,9 @@
-import { IsArray, } from "class-validator";
+import { isArray, IsArray, } from "class-validator";
 import { Type, Expose, } from "class-transformer";
 
 export class getOndutyData {
 
+  @IsArray()
   _maintain: Array<string> | undefined;
 
   @Type(() => String)

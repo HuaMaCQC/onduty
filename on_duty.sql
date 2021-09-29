@@ -1,0 +1,102 @@
+-- phpMyAdmin SQL Dump
+-- version 5.1.0
+-- https://www.phpmyadmin.net/
+--
+-- 主機： db
+-- 產生時間： 2021 年 09 月 29 日 03:47
+-- 伺服器版本： 10.4.11-MariaDB-1:10.4.11+maria~bionic
+-- PHP 版本： 7.4.16
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- 資料庫： `on_duty`
+--
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `group_member`
+--
+
+CREATE TABLE `group_member` (
+  `id` int(11) NOT NULL,
+  `name` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `group_member`
+--
+
+INSERT INTO `group_member` (`id`, `name`) VALUES
+(8, 'alex10'),
+(2, 'eddy'),
+(6, 'hong-yin'),
+(4, 'ray'),
+(7, 'winnie'),
+(5, 'youli'),
+(3, '小楓'),
+(1, '花媽');
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `onduty`
+--
+
+CREATE TABLE `onduty` (
+  `onduty_date` date NOT NULL,
+  `nameID` int(11) NOT NULL,
+  `isMaintain` tinyint(1) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `onduty`
+--
+
+INSERT INTO `onduty` (`onduty_date`, `nameID`, `isMaintain`) VALUES
+('2021-09-22', 8, 1),
+('2021-09-23', 2, 0),
+('2021-09-24', 4, 0),
+('2021-09-25', 1, 0);
+
+--
+-- 已傾印資料表的索引
+--
+
+--
+-- 資料表索引 `group_member`
+--
+ALTER TABLE `group_member`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `name` (`name`);
+
+--
+-- 資料表索引 `onduty`
+--
+ALTER TABLE `onduty`
+  ADD PRIMARY KEY (`onduty_date`),
+  ADD KEY `nameID` (`nameID`);
+
+--
+-- 已傾印資料表的限制式
+--
+
+--
+-- 資料表的限制式 `onduty`
+--
+ALTER TABLE `onduty`
+  ADD CONSTRAINT `member_id` FOREIGN KEY (`nameID`) REFERENCES `group_member` (`id`);
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
