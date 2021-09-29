@@ -25,7 +25,7 @@ export default class Controller {
     console.log(d)
     const onduty = new Onduty(
       await Controller.groupMember,
-      [],
+      d.maintain || [],
       d.startDay,
       d.endDay,
     );
