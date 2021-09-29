@@ -2,7 +2,7 @@ import { IsArray, } from "class-validator";
 import { Type, Expose, } from "class-transformer";
 
 export class getOndutyData {
-  @Expose()
+
   _maintain: Array<string> | undefined;
 
   @Type(() => String)
@@ -13,8 +13,9 @@ export class getOndutyData {
   @Expose()
   endDay: string;
 
+  @Expose()
   set maintain(v:any){
-    this._maintain = JSON.parse(v)
+    this._maintain = JSON.parse(v);
   }
 
   get maintain(): Array<string> | undefined {
