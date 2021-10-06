@@ -1,9 +1,8 @@
-import { OnDutyType, getOnDutyType, GroupMember } from "./type";
+import { OnDutyType, getOnDutyType, GroupMember, NewData } from "./type";
 import dayjs from "dayjs";
 import weekday from "dayjs/plugin/weekday";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
-
 
 dayjs.extend(weekday);
 dayjs.extend(utc);
@@ -11,10 +10,11 @@ dayjs.extend(timezone);
 dayjs.tz.setDefault("Asia/Taipei");
 
 export default class Onduty {
-  private groupMembers:Array<GroupMember>;
+  private groupMembers: Array<GroupMember>;
   private maintain: Array<string>;
   private startDay: dayjs.Dayjs;
   private endDay: dayjs.Dayjs;
+  private newData: Array<NewData> = [];
 
   constructor(
     groupMembers: Array<GroupMember>,
@@ -37,14 +37,14 @@ export default class Onduty {
     let ids: Array<number> = [];
     let length = this.groupMembers[0][key].length;
 
-    this.groupMembers.forEach((v, i) => {
-      if (v[key].length < length) {
-        ids = [v.id];
-        length = this.groupMembers[i][key].length;
-      } else if (v[key].length === length) {
+    this.groupMembers.forEach((v) => {
+      if (v[key].length === length) {
         ids.push(v.id);
+      } else if (v[key].length < length) {
+        ids = [v.id];
+        length = v[key].length;
       }
-    }, []);
+    });
 
     return ids;
   }
@@ -124,20 +124,36 @@ export default class Onduty {
       const daykey = getOnDutyType(day.format("ddd"));
       const ruleIds1 = this.ruleNoOnDutyIds(daykey);
       const ruleIds2 = this.ruleNoContinuous(day);
+  
       let ids = ruleIds1.filter((id) => ruleIds2.indexOf(id) !== -1);
+      if (ids.length <= 0) {
+        console.log('ids.length <= 0');
+        ids = ruleIds2;
+      }
+
       const newIds = ids.filter((id) => !this.ruleNoRepeatedly(day, id));
 
       if (newIds.length > 0) {
         ids = newIds;
       }
 
+      if (ids.length <= 0) {
+        console.log('error');
+      }
+
       const idRandom = this.getRandom(ids);
 
-      this.groupMembers.forEach(
-        (v, k) =>
-          v.id === idRandom.id &&
-          this.groupMembers[k][daykey].push(dayjs(day).format("YYYY-MM-DD"))
-      );
+      this.groupMembers.forEach((v, k) => {
+        if (v.id === idRandom.id) {
+          this.groupMembers[k][daykey].push(dayjs(day).format("YYYY-MM-DD"));
+          this.newData.push({
+            id: v.id,
+            onduty_date: dayjs(day).format("YYYY-MM-DD"),
+            isMaintain: false,
+            maintain_afternoon: undefined,
+          });
+        }
+      });
       day = day.add(1, "day");
     }
   }
@@ -149,23 +165,99 @@ export default class Onduty {
     let NoOnDutyIds = this.ruleNoOnDutyIds(OnDutyType.maintain);
 
     this.maintain.forEach((d) => {
+      if (dayjs(d).isBefore(dayjs(this.startDay), "day")) {
+        return;
+      }
+
       if (NoOnDutyIds.length === 0) {
         NoOnDutyIds = this.ruleNoOnDutyIds(OnDutyType.maintain);
       }
 
       const idRandom = this.getRandom(NoOnDutyIds);
       NoOnDutyIds = idRandom.newIds;
-      this.groupMembers.forEach(
-        (v, k) => v.id === idRandom.id && this.groupMembers[k].maintain.push(d)
-      );
+      this.groupMembers.forEach((v, k) => {
+        if (v.id === idRandom.id) {
+          this.groupMembers[k].maintain.push(d);
+          this.newData.push({
+            id: v.id,
+            onduty_date: dayjs(d).format("YYYY-MM-DD"),
+            isMaintain: true,
+            maintain_afternoon: undefined,
+          });
+        }
+      });
+    });
+  }
+
+  private findGroupMembers(day: dayjs.Dayjs): number {
+    const type = getOnDutyType(day.format("ddd"));
+
+    let d = this.groupMembers.find((d) => {
+      return d[type].indexOf(day.format("YYYY-MM-DD")) !== -1;
+    });
+
+    if (d === undefined && type === OnDutyType.Wed) {
+      d = this.groupMembers.find((d) => {
+        return d.maintain.indexOf(day.format("YYYY-MM-DD")) !== -1;
+      });
+    }
+
+    return d !== undefined ? d.id : -1;
+  }
+
+  // 選出大值班下午班
+  public maintainAfternoon(): void {
+    this.groupMembers.forEach((d) => {
+      d.maintain.forEach((d2) => {
+        let ids = this.groupMembers.map((d) => d.id);
+        const d2Id = this.findGroupMembers(dayjs(d2));
+
+        ids = ids.filter((v) => d2Id !== v);
+
+        for (let i = 1; i <= 3; i++) {
+          const addID = this.findGroupMembers(dayjs(d2).add(i, "day"));
+          const subtractID = this.findGroupMembers(
+            dayjs(d2).subtract(i, "day")
+          );
+
+          ids = ids.filter((v) => addID !== v);
+          ids = ids.filter((v) => subtractID !== v);
+        }
+
+        if (ids.length === 0) {
+          ids = this.groupMembers.map((d) => d.id);
+        }
+        const idRandom = this.getRandom(ids);
+
+        this.groupMembers.forEach((v, k) => {
+          if (v.id === idRandom.id) {
+            this.groupMembers[k].maintain_afternoon.push(d2);
+          }
+        });
+
+        this.newData.find((d, i) => {
+          if (d.onduty_date === d2) {
+            this.newData[i].maintain_afternoon = idRandom.id;
+          }
+          return d.onduty_date === d2;
+        });
+      });
     });
   }
 
   /**
    * 取得結果
-   * @returns 
+   * @returns
    */
-  public getGroupMembers(): Array<GroupMember>{
+  public getGroupMembers(): Array<GroupMember> {
     return this.groupMembers;
+  }
+
+  /**
+   * 取得結果
+   * @returns
+   */
+  public getNewData(): Array<NewData> {
+    return this.newData;
   }
 }

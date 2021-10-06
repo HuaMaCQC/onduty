@@ -1,30 +1,33 @@
-import { IsArray, } from "class-validator";
-import { Type, Expose, } from "class-transformer";
+import { IsArray } from "class-validator";
+import { Type } from "class-transformer";
+import dayjs from "dayjs";
 
-export class getOndutyData {
-
+export class ListData {
   @IsArray()
-  _maintain: Array<string> | undefined;
+  private _maintain: Array<string> | undefined = [];
 
   @Type(() => String)
-  @Expose()
-  startDay: string;
+  endDay: string = "";
 
+  set maintain(v: any) {
+    const _v: Array<string> = JSON.parse(v);
+
+    _v.forEach((d) => {
+      if (dayjs(d).isValid()) {
+        this._maintain?.push(d);
+      } else {
+        this._maintain = undefined;
+        return;
+      }
+    });
+  }
+
+  get maintain(): Array<string> {
+    return this._maintain || [];
+  }
+}
+
+export class listCsv extends ListData {
   @Type(() => String)
-  @Expose()
-  endDay: string;
-
-  @Expose()
-  set maintain(v:any){
-    this._maintain = JSON.parse(v);
-  }
-
-  get maintain(): Array<string> | undefined {
-    return this._maintain;
-  }
-
-  constructor(startDay: string, endDay: string) {
-    this.startDay = startDay;
-    this.endDay = endDay;
-  }
+  startDay: string = "";
 }

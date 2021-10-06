@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- 主機： db
--- 產生時間： 2021 年 09 月 29 日 03:47
+-- 產生時間： 2021 年 10 月 06 日 03:17
 -- 伺服器版本： 10.4.11-MariaDB-1:10.4.11+maria~bionic
 -- PHP 版本： 7.4.16
 
@@ -55,18 +55,9 @@ INSERT INTO `group_member` (`id`, `name`) VALUES
 CREATE TABLE `onduty` (
   `onduty_date` date NOT NULL,
   `nameID` int(11) NOT NULL,
-  `isMaintain` tinyint(1) NOT NULL DEFAULT 0
+  `isMaintain` tinyint(1) NOT NULL DEFAULT 0,
+  `maintain_afternoon` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- 傾印資料表的資料 `onduty`
---
-
-INSERT INTO `onduty` (`onduty_date`, `nameID`, `isMaintain`) VALUES
-('2021-09-22', 8, 1),
-('2021-09-23', 2, 0),
-('2021-09-24', 4, 0),
-('2021-09-25', 1, 0);
 
 --
 -- 已傾印資料表的索引
@@ -84,7 +75,8 @@ ALTER TABLE `group_member`
 --
 ALTER TABLE `onduty`
   ADD PRIMARY KEY (`onduty_date`),
-  ADD KEY `nameID` (`nameID`);
+  ADD KEY `nameID` (`nameID`),
+  ADD KEY `member_id` (`maintain_afternoon`);
 
 --
 -- 已傾印資料表的限制式
@@ -94,7 +86,8 @@ ALTER TABLE `onduty`
 -- 資料表的限制式 `onduty`
 --
 ALTER TABLE `onduty`
-  ADD CONSTRAINT `member_id` FOREIGN KEY (`nameID`) REFERENCES `group_member` (`id`);
+  ADD CONSTRAINT `afternoon_member_id` FOREIGN KEY (`nameID`) REFERENCES `group_member` (`id`),
+  ADD CONSTRAINT `member_id` FOREIGN KEY (`maintain_afternoon`) REFERENCES `group_member` (`id`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
