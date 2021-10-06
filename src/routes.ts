@@ -9,11 +9,11 @@ router.get("/onduty/list", controller.list);
 // 產生 回傳csv
 router.get("/onduty/list/csv", controller.getCsv);
 
-// 測試
-router.get("/onduty/test/length", controller.testLength);
+// 取得長度
+router.get("/onduty/length", controller.dataLength);
 
-// 重新產生
-// router.get("/onduty/again", controller.getOnduty);
+// 修改值班
+router.get("/onduty/edit", controller.edit);
 // // 清空全部資料庫
 // router.delete("/onduty/delete/all", controller.getOnduty);
 // // 刪除其中幾筆日期
