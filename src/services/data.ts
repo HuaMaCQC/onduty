@@ -72,14 +72,19 @@ export default class Data {
             v = `'${isAfternoonMaintain.id}'`;
           }
 
-          return `('${d.onduty_date}', '${d.id}', '${Number(d.isMaintain)}', ${v} )`;
+          return `('${d.onduty_date}', '${d.id}', '${Number(
+            d.isMaintain
+          )}', ${v} )`;
         })
         .join(",");
 
     await this.query(sql);
   }
 
-  public async getGroupMember(startDate?: dayjs.Dayjs): Promise<GroupMember[]> {
+  public async getGroupMember(
+    startDate?: string,
+    endDate?: string
+  ): Promise<GroupMember[]> {
     const member = await this.query<MemberData>(
       "SELECT * FROM `group_member` ORDER BY `id` ASC"
     );
@@ -88,7 +93,13 @@ export default class Data {
       "SELECT group_member.id, onduty.onduty_date, onduty.isMaintain, onduty.maintain_afternoon  FROM `onduty` INNER JOIN `group_member` ON onduty.nameID = group_member.id";
 
     if (startDate) {
-      beforeOndutySql += ` WHERE 'onduty_date' >= '${startDate
+      beforeOndutySql += ` WHERE \`onduty_date\` >= '${dayjs(startDate)
+        .tz("Asia/Taipei")
+        .format("YYYY-MM-DD")}'`;
+    }
+
+    if (startDate && endDate) {
+      beforeOndutySql += `AND \`onduty_date\` <= '${dayjs(endDate)
         .tz("Asia/Taipei")
         .format("YYYY-MM-DD")}'`;
     }
@@ -132,19 +143,3 @@ export default class Data {
     return data;
   }
 }
-
-// const d = new Data();
-// console.log(
-//   d.saveData([
-//     {
-//       id: 2,
-//       isMaintain: false,
-//       onduty_date: "2021-09-10",
-//     },
-//     {
-//       id: 3,
-//       isMaintain: true,
-//       onduty_date: "2021-09-11",
-//     },
-//   ])
-// );

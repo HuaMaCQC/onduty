@@ -77,7 +77,7 @@ export default class Onduty {
    * @param ids 值班人員
    */
   private ruleNoRepeatedly(day: dayjs.Dayjs, ids: number) {
-    const dayLength = this.groupMembers.length;
+    const dayLength = this.groupMembers.length - 1;
     const member = this.groupMembers.find((d) => d.id === ids);
     if (dayLength <= 0) {
       return false;

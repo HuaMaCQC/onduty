@@ -1,21 +1,18 @@
 import "reflect-metadata";
-import { Context, Next } from "koa";
+import { Context } from "koa";
 import dayjs from "dayjs";
 import { plainToClassFromExist } from "class-transformer";
 import { validate, ValidationError } from "class-validator";
-import { listCsv, ListData } from ".././validatorData";
-import Onduty from "../services/onduty";
-import DB from "../services/data";
+import { addCsv, ListData } from ".././validatorData";
+import services from "../services";
 
 import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
 
 export default class Controller {
-  private static db = new DB();
-
-  // api = /onduty/list
-  public static async list(ctx: Context): Promise<void> {
-    const d = plainToClassFromExist(new ListData(), ctx.request.query);
+  // api = /onduty / 產生
+  public static async onduty(ctx: Context): Promise<void> {
+    const d = plainToClassFromExist(new addCsv(), ctx.request.query);
     const errors: ValidationError[] = await validate(d);
 
     if (errors.length > 0) {
@@ -25,53 +22,15 @@ export default class Controller {
       return;
     }
 
-    const startDay = await Controller.db.getEndDay();
-
-    if (dayjs(d.endDay).isAfter(dayjs(startDay), "day")) {
-      const onduty = new Onduty(
-        await Controller.db.getGroupMember(),
-        d.maintain,
-        dayjs(startDay).add(1, "day").format("YYYY-MM-DD"),
-        d.endDay
-      );
-      onduty.maintainOnDuty();
-      onduty.getOnduty();
-      onduty.maintainAfternoon();
-      await Controller.db.saveData(onduty.getNewData());
-    }
-
-    ctx.state = 200;
-    ctx.body = await Controller.db.getGroupMember();
-  }
-
-  // api = /onduty/list/csv
-  public static async getCsv(ctx: Context): Promise<void> {
-    const d = plainToClassFromExist(new listCsv(), ctx.request.query);
-    const errors: ValidationError[] = await validate(d);
-
-    if (errors.length > 0) {
-      ctx.state = 400;
-      ctx.body = errors;
+    const addData = await services.randomOnduty(d.endDay, d.maintain, d.startDay);
+    if(addData === undefined){
+      ctx.state = 200;
+      ctx.body = '沒有新增值班';
 
       return;
     }
 
-    const startDay = await Controller.db.getEndDay();
-
-    if (dayjs(d.endDay).isAfter(dayjs(startDay), "day")) {
-      const onduty = new Onduty(
-        await Controller.db.getGroupMember(),
-        d.maintain,
-        dayjs(startDay).add(1, "day").format("YYYY-MM-DD"),
-        d.endDay
-      );
-      onduty.maintainOnDuty();
-      onduty.getOnduty();
-      onduty.maintainAfternoon();
-      await Controller.db.saveData(onduty.getNewData());
-    }
-
-    const groupMember = await Controller.db.getGroupMember(dayjs(d.startDay));
+    const groupMember = await services.getGroupMember(addData?.startDay, addData?.endDay);
     const data = groupMember.reduce((accumulator, currentValue) => {
       const content =
         currentValue.Fri.map((v) => `\r\n#${currentValue.name},${v}`).join("") +
@@ -83,12 +42,9 @@ export default class Controller {
         currentValue.Wed.map((v) => `\r\n#${currentValue.name},${v}`).join("") +
         currentValue.maintain
           .map((v) => {
-
-            const afternoon = groupMember.find(
-              (d) => {
-                return d.maintain_afternoon.indexOf(v) !== -1
-              }
-            )?.name;
+            const afternoon = groupMember.find((d) => {
+              return d.maintain_afternoon.indexOf(v) !== -1;
+            })?.name;
 
             return `\r\n#${currentValue.name}/${afternoon},${v}`;
           })
@@ -97,12 +53,12 @@ export default class Controller {
       return `${accumulator}${content}`;
     }, "\uFEFF Subject,Start Date");
 
-    ctx.state = 400;
+    ctx.state = 200;
     ctx.body = data;
   }
 
-  // api = /onduty/length
-  public static async dataLength(ctx: Context): Promise<void> {
+  // api = /onduty/list 查看全部資料
+  public static async list(ctx: Context): Promise<void> {
     const d = plainToClassFromExist(new ListData(), ctx.request.query);
     const errors: ValidationError[] = await validate(d);
 
@@ -113,38 +69,74 @@ export default class Controller {
       return;
     }
 
-    const startDay = await Controller.db.getEndDay();
+    ctx.state = 200;
+    ctx.body = await services.getGroupMember(d.startDay, d.endDay);
+  }
 
-    if (dayjs(d.endDay).isAfter(dayjs(startDay), "day")) {
-      const onduty = new Onduty(
-        await Controller.db.getGroupMember(),
-        d.maintain,
-        dayjs(startDay).add(1, "day").format("YYYY-MM-DD"),
-        d.endDay
-      );
-      onduty.maintainOnDuty();
-      onduty.getOnduty();
-      onduty.maintainAfternoon();
-      await Controller.db.saveData(onduty.getNewData());
+  // api = /onduty/list/length //不產生
+  public static async dataLength(ctx: Context): Promise<void> {
+    const d = plainToClassFromExist(new ListData(), ctx.request.query);
+    const errors: ValidationError[] = await validate(d);
+
+    if (errors.length > 0) {
+      ctx.state = 400; 
+      ctx.body = errors;
+
+      return;
     }
 
     ctx.state = 200;
-    ctx.body = await (await Controller.db.getGroupMember()).map((vv) => ({
-      name : vv.name,
-      Fri:vv.Fri.length,
+    ctx.body = await (
+      await services.getGroupMember(d.startDay, d.endDay)
+    ).map((vv) => ({
+      name: vv.name,
+      Fri: vv.Fri.length,
       Mon: vv.Mon.length,
-      Sat:vv.Sat.length,
+      Sat: vv.Sat.length,
       Sun: vv.Sun.length,
-      Thu:vv.Thu.length,
+      Thu: vv.Thu.length,
       Tue: vv.Tue.length,
       wed: vv.Wed.length,
       maintain: vv.maintain.length,
-      maintain_afternoon:vv.maintain_afternoon.length,
+      maintain_afternoon: vv.maintain_afternoon.length,
     }));
   }
 
-  // 修改值班
-  public static async edit(ctx: Context): Promise<void> {
+  public static async getCsv(ctx: Context): Promise<void> {
+    const d = plainToClassFromExist(new ListData(), ctx.request.query);
+    const errors: ValidationError[] = await validate(d);
 
+    if (errors.length > 0) {
+      ctx.state = 400;
+      ctx.body = errors;
+
+      return;
+    }
+
+    const groupMember = await services.getGroupMember(d.startDay, d.endDay);
+    const data = groupMember.reduce((accumulator, currentValue) => {
+      const content =
+        currentValue.Fri.map((v) => `\r\n#${currentValue.name},${v}`).join("") +
+        currentValue.Mon.map((v) => `\r\n#${currentValue.name},${v}`).join("") +
+        currentValue.Sat.map((v) => `\r\n#${currentValue.name},${v}`).join("") +
+        currentValue.Sun.map((v) => `\r\n#${currentValue.name},${v}`).join("") +
+        currentValue.Thu.map((v) => `\r\n#${currentValue.name},${v}`).join("") +
+        currentValue.Tue.map((v) => `\r\n#${currentValue.name},${v}`).join("") +
+        currentValue.Wed.map((v) => `\r\n#${currentValue.name},${v}`).join("") +
+        currentValue.maintain
+          .map((v) => {
+            const afternoon = groupMember.find((d) => {
+              return d.maintain_afternoon.indexOf(v) !== -1;
+            })?.name;
+
+            return `\r\n#${currentValue.name}/${afternoon},${v}`;
+          })
+          .join("");
+
+      return `${accumulator}${content}`;
+    }, "\uFEFF Subject,Start Date");
+
+    ctx.state = 200;
+    ctx.body = data;
   }
 }
