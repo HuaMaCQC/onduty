@@ -1,4 +1,4 @@
-import { GroupMember, getOnDutyType, NewData } from "./type";
+import { GroupMember, getOnDutyType, NewData, MemberOnDutyDate } from "./type";
 import mariadb from "mariadb";
 import dayjs from "dayjs";
 import { DB } from "../../config";
@@ -139,6 +139,48 @@ export default class Data {
         }
       });
     });
+
+    return data;
+  }
+
+  public async getGroupMemberByName(
+    username: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<MemberOnDutyDate> {
+    const member = await this.query<MemberData>(
+      "SELECT * FROM `group_member` ORDER BY `id` ASC"
+    );
+
+    let beforeOndutySql =
+      "SELECT group_member.id, group_member.name, onduty.onduty_date, onduty.maintain_afternoon FROM `onduty` Left Join `group_member` ON onduty.nameID = group_member.id";
+
+    if (username) {
+      beforeOndutySql += ` WHERE \`name\` = '${username}'`
+    }
+
+    if (startDate) {
+      beforeOndutySql += ` AND \`onduty_date\` >= '${dayjs(startDate)
+        .tz("Asia/Taipei")
+        .format("YYYY-MM-DD")}'`;
+    }
+
+    if (startDate && endDate) {
+      beforeOndutySql += `AND \`onduty_date\` <= '${dayjs(endDate)
+        .tz("Asia/Taipei")
+        .format("YYYY-MM-DD")}'`;
+    }
+
+    const beforeOnduty = await this.query<BeforeOnduty>(beforeOndutySql)
+
+    const data: MemberOnDutyDate = {
+      id: beforeOnduty[0].id,
+      name: username,
+      onduty_date: beforeOnduty.map((d) => ({
+        date: dayjs(d.onduty_date).format("YYYY-MM-DD"),
+        maintain_afternoon: member.find((m) => m.id === d.maintain_afternoon)?.name,
+      })),
+    }
 
     return data;
   }

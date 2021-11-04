@@ -23,6 +23,16 @@ interface GroupMember {
   maintain_afternoon: Array<string>;
 }
 
+interface MemberOnDutyDateObj {
+  date: string,
+  maintain_afternoon: string | undefined
+}
+interface MemberOnDutyDate {
+  id: number,
+  name: string,
+  onduty_date: Array<MemberOnDutyDateObj>,
+}
+
 function getOnDutyType(str: string): OnDutyType {
   let v = OnDutyType.Mon;
 
@@ -70,4 +80,10 @@ interface NewData {
   maintain_afternoon: number | undefined;
 }
 
-export { GroupMember, OnDutyType, NewData, getOnDutyType };
+export {
+  GroupMember,
+  OnDutyType,
+  NewData,
+  getOnDutyType,
+  MemberOnDutyDate
+};

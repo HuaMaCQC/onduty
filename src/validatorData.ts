@@ -9,6 +9,9 @@ export class ListData {
   @Type(() => String || undefined)
   _startDay: string | undefined;
 
+  @Type(() => String || undefined)
+  _username: string | undefined;
+
   set endDay(v: any) {
     if (v && dayjs(v).isValid()) {
       this._endDay = dayjs(v).format("YYYY-MM-DD");
@@ -27,6 +30,16 @@ export class ListData {
 
   get startDay(): string {
     return this._startDay || "";
+  }
+
+  set username(v: any) {
+    if (v) {
+      this._username = v;
+    }
+  }
+
+  get username(): string {
+    return this._username || "";
   }
 }
 

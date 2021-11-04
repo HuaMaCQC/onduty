@@ -73,6 +73,22 @@ export default class Controller {
     ctx.body = await services.getGroupMember(d.startDay, d.endDay);
   }
 
+  // api = /onduty/list/filter 取得特定成員資料
+  public static async filterList(ctx: Context): Promise<void> {
+    const d = plainToClassFromExist(new ListData(), ctx.request.query);
+    const errors: ValidationError[] = await validate(d);
+
+    if (errors.length > 0) {
+      ctx.state = 400;
+      ctx.body = errors;
+
+      return;
+    }
+
+    ctx.state = 200;
+    ctx.body = await services.getGroupMemberByName(d.username, d.startDay, d.endDay)
+  }
+
   // api = /onduty/list/length //不產生
   public static async dataLength(ctx: Context): Promise<void> {
     const d = plainToClassFromExist(new ListData(), ctx.request.query);
@@ -132,6 +148,34 @@ export default class Controller {
             return `\r\n#${currentValue.name}/${afternoon},${v}`;
           })
           .join("");
+
+      return `${accumulator}${content}`;
+    }, "\uFEFF Subject,Start Date");
+
+    ctx.state = 200;
+    ctx.body = data;
+  }
+
+  public static async getCsvByName(ctx: Context): Promise<void> {
+    const d = plainToClassFromExist(new ListData(), ctx.request.query);
+    const errors: ValidationError[] = await validate(d);
+
+    if (errors.length > 0) {
+      ctx.state = 400;
+      ctx.body = errors;
+
+      return;
+    }
+
+    const groupMemberByName = await services.getGroupMemberByName(d.username, d.startDay, d.endDay);
+    const data = groupMemberByName.onduty_date.reduce((accumulator, currentValue) => {
+      let content = `\r\n#${groupMemberByName.name}`
+
+      if (currentValue.maintain_afternoon) {
+        content += `/${currentValue.maintain_afternoon}`
+      }
+
+      content += `,${currentValue.date}`;
 
       return `${accumulator}${content}`;
     }, "\uFEFF Subject,Start Date");
