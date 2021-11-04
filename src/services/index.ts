@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import DB from "./data";
 import Onduty from "./onduty";
-import { GroupMember } from "./type";
+import { GroupMember, MemberOnDutyDate } from "./type";
 export default class service {
   constructor() {}
 
@@ -12,6 +12,15 @@ export default class service {
   ): Promise<GroupMember[]> {
     const db = new DB();
     return await db.getGroupMember(start, end);
+  }
+  // 取得會員
+  public static async getGroupMemberByName(
+    username: string,
+    start?: string,
+    end?: string,
+  ): Promise<MemberOnDutyDate> {
+    const db = new DB();
+    return await db.getGroupMemberByName(username, start, end);
   }
 
   // 產生值班
