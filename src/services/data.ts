@@ -14,6 +14,12 @@ interface BeforeOnduty {
   isMaintain: number;
   maintain_afternoon: number | null;
 }
+interface BeforeOndutyByName {
+  id: number;
+  name: string,
+  onduty_date: string;
+  maintain_afternoon_name: string | undefined;
+}
 
 interface EndDay {
   date: string;
@@ -148,16 +154,13 @@ export default class Data {
     startDate?: string,
     endDate?: string
   ): Promise<MemberOnDutyDate> {
-    const member = await this.query<MemberData>(
-      "SELECT * FROM `group_member` ORDER BY `id` ASC"
-    );
-
     let beforeOndutySql =
-      "SELECT group_member.id, group_member.name, onduty.onduty_date, onduty.maintain_afternoon FROM `onduty` Left Join `group_member` ON onduty.nameID = group_member.id";
-
-    if (username) {
-      beforeOndutySql += ` WHERE \`name\` = '${username}'`
-    }
+      `SELECT nameID as id , group_member.name, onduty_date, maintain_afternoon,
+      Replace(onduty.maintain_afternoon,onduty.maintain_afternoon, (SELECT name FROM group_member WHERE onduty.maintain_afternoon = group_member.id)) as maintain_afternoon_name
+      FROM onduty INNER JOIN group_member ON group_member.id = onduty.nameID
+      WHERE group_member.name = '${username}'
+      OR onduty.maintain_afternoon = (SELECT id FROM group_member WHERE name = '${username}')
+      ORDER BY onduty_date ASC`;
 
     if (startDate) {
       beforeOndutySql += ` AND \`onduty_date\` >= '${dayjs(startDate)
@@ -171,16 +174,27 @@ export default class Data {
         .format("YYYY-MM-DD")}'`;
     }
 
-    const beforeOnduty = await this.query<BeforeOnduty>(beforeOndutySql)
+    const beforeOnduty = await this.query<BeforeOndutyByName>(beforeOndutySql)
 
     const data: MemberOnDutyDate = {
       id: beforeOnduty[0].id,
       name: username,
-      onduty_date: beforeOnduty.map((d) => ({
-        date: dayjs(d.onduty_date).format("YYYY-MM-DD"),
-        maintain_afternoon: member.find((m) => m.id === d.maintain_afternoon)?.name,
-      })),
+      onduty_date: [],
     }
+
+    data.onduty_date = beforeOnduty.map((d) => {
+      const a = {
+        name: d.name,
+        date: dayjs(d.onduty_date).format("YYYY-MM-DD"),
+        maintain_afternoon_name: d.maintain_afternoon_name,
+      }
+
+      if (!d.maintain_afternoon_name) {
+        delete a.maintain_afternoon_name;
+      }
+
+      return a;
+    });
 
     return data;
   }

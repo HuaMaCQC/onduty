@@ -24,13 +24,14 @@ interface GroupMember {
 }
 
 interface MemberOnDutyDateObj {
-  date: string,
-  maintain_afternoon: string | undefined
+  name: string;
+  date: string;
+  maintain_afternoon_name: string | undefined;
 }
 interface MemberOnDutyDate {
-  id: number,
-  name: string,
-  onduty_date: Array<MemberOnDutyDateObj>,
+  id: number;
+  name: string;
+  onduty_date: Array<MemberOnDutyDateObj>;
 }
 
 function getOnDutyType(str: string): OnDutyType {

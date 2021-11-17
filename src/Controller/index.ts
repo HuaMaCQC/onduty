@@ -169,10 +169,10 @@ export default class Controller {
 
     const groupMemberByName = await services.getGroupMemberByName(d.username, d.startDay, d.endDay);
     const data = groupMemberByName.onduty_date.reduce((accumulator, currentValue) => {
-      let content = `\r\n#${groupMemberByName.name}`
+      let content = `\r\n#${currentValue.name}`
 
-      if (currentValue.maintain_afternoon) {
-        content += `/${currentValue.maintain_afternoon}`
+      if (currentValue.maintain_afternoon_name) {
+        content += `/${currentValue.maintain_afternoon_name}`
       }
 
       content += `,${currentValue.date}`;
