@@ -7,6 +7,9 @@ const router = new Router();
 // 產生 回傳csv
 router.post("/onduty", controller.onduty);
 
+// 新增人員
+router.post("/onduty/add_member", controller.addMember);
+
 // 取得
 router.get("/onduty/list", controller.list);
 

@@ -16,7 +16,7 @@ interface BeforeOnduty {
 }
 interface BeforeOndutyByName {
   id: number;
-  name: string,
+  name: string;
   onduty_date: string;
   maintain_afternoon_name: string | undefined;
 }
@@ -34,7 +34,12 @@ export default class Data {
     connectionLimit: 5,
   });
 
-  private async query<T = any>(sql: string): Promise<Array<T>> {
+  /**
+   * 查詢sql 
+   * @param sql sql 
+   * @returns 查詢結果
+   */
+  private async query<T = Array<string>>(sql: string): Promise<Array<T>> {
     let conn;
     try {
       conn = await this.pool.getConnection();
@@ -59,12 +64,16 @@ export default class Data {
       .format("YYYY-MM-DD");
   }
 
-  public async saveData(data: Array<NewData>) {
+  /**
+   * 存入新增的排班資料
+   * @param data 新增的排班資料
+   */
+  public async saveData(data: Array<NewData>): Promise<void> {
     const afternoonMaintain = data
       .filter((d) => d.maintain_afternoon)
       .map((d) => ({ id: d.maintain_afternoon, date: d.onduty_date }));
 
-    let sql =
+    const sql =
       "INSERT INTO `onduty` (`onduty_date`, `nameID`, `isMaintain`, `maintain_afternoon`) VALUES " +
       data
         .map((d) => {
@@ -87,9 +96,17 @@ export default class Data {
     await this.query(sql);
   }
 
+  /**
+   * 取的全部排班資料
+   *
+   * @param startDate 起始時間
+   * @param endDate 結束時間
+   * @returns 排班資料
+   */
   public async getGroupMember(
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    statistical?: (0|1),
   ): Promise<GroupMember[]> {
     const member = await this.query<MemberData>(
       "SELECT * FROM `group_member` ORDER BY `id` ASC"
@@ -110,6 +127,10 @@ export default class Data {
         .format("YYYY-MM-DD")}'`;
     }
 
+    if(statistical){
+      beforeOndutySql += ` AND \`statistical\` = ${statistical}`;
+    }
+    
     const beforeOnduty = await this.query<BeforeOnduty>(beforeOndutySql);
     const data: Array<GroupMember> = member.map((d) => ({
       id: d.id,
@@ -149,13 +170,20 @@ export default class Data {
     return data;
   }
 
+  /**
+   * 取得傳入組員的排班資料
+   * @param username 名稱
+   * @param startDate 起始時間
+   * @param endDate 結束時間
+   * @returns 排班的資料
+   */
   public async getGroupMemberByName(
     username: string,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    statistical?: (0|1),
   ): Promise<MemberOnDutyDate> {
-    let beforeOndutySql =
-      `SELECT nameID as id , group_member.name, onduty_date, maintain_afternoon,
+    let beforeOndutySql = `SELECT nameID as id , group_member.name, onduty_date, maintain_afternoon,
       Replace(onduty.maintain_afternoon,onduty.maintain_afternoon, (SELECT name FROM group_member WHERE onduty.maintain_afternoon = group_member.id)) as maintain_afternoon_name
       FROM onduty INNER JOIN group_member ON group_member.id = onduty.nameID
       WHERE group_member.name = '${username}'
@@ -174,20 +202,24 @@ export default class Data {
         .format("YYYY-MM-DD")}'`;
     }
 
-    const beforeOnduty = await this.query<BeforeOndutyByName>(beforeOndutySql)
+    if(statistical){
+      beforeOndutySql += ` AND \`statistical\` = ${statistical}`;
+    }
+
+    const beforeOnduty = await this.query<BeforeOndutyByName>(beforeOndutySql);
 
     const data: MemberOnDutyDate = {
       id: beforeOnduty[0].id,
       name: username,
       onduty_date: [],
-    }
+    };
 
     data.onduty_date = beforeOnduty.map((d) => {
       const a = {
         name: d.name,
         date: dayjs(d.onduty_date).format("YYYY-MM-DD"),
         maintain_afternoon_name: d.maintain_afternoon_name,
-      }
+      };
 
       if (!d.maintain_afternoon_name) {
         delete a.maintain_afternoon_name;
@@ -197,5 +229,27 @@ export default class Data {
     });
 
     return data;
+  }
+
+  /**
+   * 
+   * @param day 日期YYYY-MM-DD
+   * @param statistical 0=不納入權重計算
+   */
+  public async editStatisticale(day: string[], statistical: 0| 1): Promise<void> {
+    let sql = `UPDATE \`onduty\` SET \`statistical\` = '${statistical}' WHERE`
+    sql += day.map(d => `\`onduty\`.\`onduty_date\` = '${d}'`).join(' OR ');
+
+    await this.query(sql);
+  }
+
+  /**
+   * 新增組員
+   * @param name 名稱 
+   */
+  public async addMember(name:string): Promise<void>{
+    const sql = `INSERT INTO \`group_member\` (\`name\`) VALUES ('${name}')`;
+
+    await this.query(sql);
   }
 }

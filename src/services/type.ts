@@ -9,6 +9,12 @@ enum OnDutyType {
   maintain = "maintain",
 }
 
+enum statisticalType {
+  all = 'all',
+  true = 1,
+  false = 0,
+}
+
 interface GroupMember {
   id: number;
   name: string;
@@ -66,6 +72,10 @@ function getOnDutyType(str: string): OnDutyType {
       v = OnDutyType.Sun;
       break;
     }
+    case "maintain": {
+      v = OnDutyType.maintain;
+      break;
+    }
     default: {
       break;
     }
@@ -86,5 +96,6 @@ export {
   OnDutyType,
   NewData,
   getOnDutyType,
-  MemberOnDutyDate
+  MemberOnDutyDate,
+  statisticalType,
 };

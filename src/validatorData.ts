@@ -10,6 +10,9 @@ export class ListData {
   _startDay: string | undefined;
 
   @Type(() => String || undefined)
+  statistical: (0|1| 'all') | undefined;
+
+  @Type(() => String || undefined)
   _username: string | undefined;
 
   set endDay(v: any) {
@@ -66,4 +69,9 @@ export class addCsv extends ListData {
   get maintain(): Array<string> {
     return this._maintain || [];
   }
+}
+
+export class addMember extends ListData {
+  @Type(() => String)
+  name: string | undefined;
 }
