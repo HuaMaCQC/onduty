@@ -9,7 +9,7 @@ export class ListData {
   @Type(() => String || undefined)
   _startDay: string | undefined;
 
-  @Type(() => String || undefined)
+  @Type(() => String || Number || undefined)
   statistical: (0|1| 'all') | undefined;
 
   @Type(() => String || undefined)
@@ -71,7 +71,7 @@ export class addCsv extends ListData {
   }
 }
 
-export class addMember extends ListData {
+export class addMember {
   @Type(() => String)
   name: string | undefined;
 }

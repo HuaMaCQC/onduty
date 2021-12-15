@@ -99,6 +99,6 @@ export default class service {
     const noStatistical = sort.getNoStatistical(await service.getGroupMember());
 
     await db.editStatisticale(noStatistical, 0);
-    await db.addMember(name);
+    // await db.addMember(name);
   }
 }

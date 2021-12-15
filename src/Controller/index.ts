@@ -3,7 +3,7 @@ import { Context } from "koa";
 import dayjs from "dayjs";
 import { plainToClassFromExist } from "class-transformer";
 import { validate, ValidationError } from "class-validator";
-import { addCsv, ListData } from ".././validatorData";
+import { addCsv, ListData, addMember } from ".././validatorData";
 import { statisticalType } from "../services/type";
 import services from "../services";
 
@@ -67,15 +67,20 @@ export default class Controller {
 
   // api = /onduty/add 新增組員
   public static async addMember(ctx: Context): Promise<void> {
-    const d = plainToClassFromExist(new ListData(), ctx.request.query);
+    const d = plainToClassFromExist(new addMember(), ctx.request.query);
+    console.log(d);
     const errors: ValidationError[] = await validate(d);
-
-    if (errors.length > 0) {
+    console.log(d.name,1);
+    if (errors.length > 0 || !d.name) {
       ctx.state = 400;
       ctx.body = errors;
 
       return;
     }
+    
+    await services.addMember(d.name)
+    ctx.state = 200;
+    ctx.body = 'ok';
   }
 
   // api = /onduty/list 查看全部資料
