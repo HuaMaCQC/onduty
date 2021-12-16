@@ -35,8 +35,8 @@ export default class Data {
   });
 
   /**
-   * 查詢sql 
-   * @param sql sql 
+   * 查詢sql
+   * @param sql sql
    * @returns 查詢結果
    */
   private async query<T = Array<string>>(sql: string): Promise<Array<T>> {
@@ -106,7 +106,7 @@ export default class Data {
   public async getGroupMember(
     startDate?: string,
     endDate?: string,
-    statistical?: (0|1),
+    statistical?: 0 | 1
   ): Promise<GroupMember[]> {
     const member = await this.query<MemberData>(
       "SELECT * FROM `group_member` ORDER BY `id` ASC"
@@ -127,10 +127,10 @@ export default class Data {
         .format("YYYY-MM-DD")}'`;
     }
 
-    if(statistical){
+    if (statistical) {
       beforeOndutySql += ` AND \`statistical\` = ${statistical}`;
     }
-    
+
     const beforeOnduty = await this.query<BeforeOnduty>(beforeOndutySql);
     const data: Array<GroupMember> = member.map((d) => ({
       id: d.id,
@@ -181,14 +181,16 @@ export default class Data {
     username: string,
     startDate?: string,
     endDate?: string,
-    statistical?: (0|1),
+    statistical?: 0 | 1
   ): Promise<MemberOnDutyDate> {
     let beforeOndutySql = `SELECT nameID as id , group_member.name, onduty_date, maintain_afternoon,
       Replace(onduty.maintain_afternoon,onduty.maintain_afternoon, (SELECT name FROM group_member WHERE onduty.maintain_afternoon = group_member.id)) as maintain_afternoon_name
       FROM onduty INNER JOIN group_member ON group_member.id = onduty.nameID
-      WHERE group_member.name = '${username}'
-      OR onduty.maintain_afternoon = (SELECT id FROM group_member WHERE name = '${username}')
-      ORDER BY onduty_date ASC`;
+      WHERE (name = '${username}' OR maintain_afternoon = (SELECT id FROM group_member WHERE name = '${username}'))`;
+
+    if (statistical) {
+      beforeOndutySql += ` AND \`statistical\` = ${statistical}`;
+    }
 
     if (startDate) {
       beforeOndutySql += ` AND \`onduty_date\` >= '${dayjs(startDate)
@@ -202,9 +204,7 @@ export default class Data {
         .format("YYYY-MM-DD")}'`;
     }
 
-    if(statistical){
-      beforeOndutySql += ` AND \`statistical\` = ${statistical}`;
-    }
+    beforeOndutySql += `ORDER BY onduty_date ASC`;
 
     const beforeOnduty = await this.query<BeforeOndutyByName>(beforeOndutySql);
 
@@ -232,22 +232,25 @@ export default class Data {
   }
 
   /**
-   * 
+   *
    * @param day 日期YYYY-MM-DD
    * @param statistical 0=不納入權重計算
    */
-  public async editStatisticale(day: string[], statistical: 0| 1): Promise<void> {
-    let sql = `UPDATE \`onduty\` SET \`statistical\` = '${statistical}' WHERE`
-    sql += day.map(d => `\`onduty\`.\`onduty_date\` = '${d}'`).join(' OR ');
+  public async editStatisticale(
+    day: string[],
+    statistical: 0 | 1
+  ): Promise<void> {
+    let sql = `UPDATE \`onduty\` SET \`statistical\` = '${statistical}' WHERE`;
+    sql += day.map((d) => `\`onduty\`.\`onduty_date\` = '${d}'`).join(" OR ");
 
     await this.query(sql);
   }
 
   /**
    * 新增組員
-   * @param name 名稱 
+   * @param name 名稱
    */
-  public async addMember(name:string): Promise<void>{
+  public async addMember(name: string): Promise<void> {
     const sql = `INSERT INTO \`group_member\` (\`name\`) VALUES ('${name}')`;
 
     await this.query(sql);
