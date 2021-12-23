@@ -75,3 +75,44 @@ export class addMember {
   @Type(() => String)
   name: string | undefined;
 }
+
+export class delMember {
+  @Type(() => String || undefined)
+  _endDay: string | undefined;
+
+  @Type(() => String || undefined)
+  _startDay: string | undefined;
+
+  @Type(() => String || undefined)
+  _username: string | undefined;
+
+  set endDay(v: any) {
+    if (v && dayjs(v).isValid()) {
+      this._endDay = dayjs(v).format("YYYY-MM-DD");
+    }
+  }
+
+  get endDay(): string {
+    return this._endDay || "";
+  }
+
+  set startDay(v: any) {
+    if (v && dayjs(v).isValid()) {
+      this._startDay = dayjs(v).format("YYYY-MM-DD");
+    }
+  }
+
+  get startDay(): string {
+    return this._startDay || "";
+  }
+
+  set username(v: any) {
+    if (v) {
+      this._username = v;
+    }
+  }
+
+  get username(): string {
+    return this._username || "";
+  }
+}

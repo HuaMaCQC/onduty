@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import DB from "./data";
 import Onduty from "./onduty";
-import { GroupMember, MemberOnDutyDate, statisticalType } from "./type";
+import { GroupMember, MemberOnDutyDate, statisticalType, NewData } from "./type";
 import Sort from "./sort";
 export default class service {
   /**
@@ -100,5 +100,34 @@ export default class service {
 
     await db.editStatisticale(noStatistical, 0);
     // await db.addMember(name);
+  }
+
+  /**
+   * 刪除組員
+   * @param name 組員名稱
+   */
+  public static async deleteMember(
+    name: string,
+    startDay: string,
+    endDay: string
+  ): Promise<NewData[]> {
+    const db = new DB();
+
+    const onduty = new Onduty(
+      await service.getGroupMember(),
+      [],
+      startDay,
+      endDay
+    );
+    const againDay = (await db.deleteMember(name, startDay, endDay)).map(
+      (d) => ({
+        onduty_date: dayjs(d.onduty_date).format("YYYY-MM-DD"),
+        isMaintain: d.isMaintain ? true : false,
+      })
+    );
+    const data = onduty.againOnduty(againDay);
+    await db.saveData(data);
+    
+    return data;
   }
 }

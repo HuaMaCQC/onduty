@@ -1,4 +1,4 @@
-import { GroupMember, getOnDutyType, NewData, MemberOnDutyDate } from "./type";
+import { GroupMember, getOnDutyType, NewData, MemberOnDutyDate, DeleteMember } from "./type";
 import mariadb from "mariadb";
 import dayjs from "dayjs";
 import { DB } from "../../config";
@@ -69,6 +69,10 @@ export default class Data {
    * @param data 新增的排班資料
    */
   public async saveData(data: Array<NewData>): Promise<void> {
+    if(data.length <= 0){
+      return;
+    }
+
     const afternoonMaintain = data
       .filter((d) => d.maintain_afternoon)
       .map((d) => ({ id: d.maintain_afternoon, date: d.onduty_date }));
@@ -255,4 +259,39 @@ export default class Data {
 
     await this.query(sql);
   }
+
+  /**
+   * 刪除組員
+   * @param name 名稱
+   */
+     public async deleteMember(
+      name: string,
+      startDate?: string,
+      endDate?: string,
+      ): Promise<DeleteMember[]> {
+      let getDelDay = `SELECT \`onduty_date\` , \`isMaintain\` FROM \`onduty\` WHERE \`nameID\` = (SELECT id FROM group_member WHERE name = '${name}')`;
+      
+      if (startDate) {
+        getDelDay += ` AND \`onduty_date\` >= '${dayjs(startDate)
+          .tz("Asia/Taipei")
+          .format("YYYY-MM-DD")}'`;
+      }
+  
+      if (startDate && endDate) {
+        getDelDay += `AND \`onduty_date\` <= '${dayjs(endDate)
+          .tz("Asia/Taipei")
+          .format("YYYY-MM-DD")}'`;
+      }
+
+      const delday = `DELETE FROM \`onduty\` WHERE \`nameID\` = (SELECT id FROM group_member WHERE name = '${name}')
+        OR \`maintain_afternoon\` = (SELECT id FROM group_member WHERE name = '${name}')`;
+      const delmember =  `DELETE FROM group_member WHERE name = '${name}'`
+
+      let delDayData = await this.query<DeleteMember>(getDelDay);
+      await this.query(delday);
+      await this.query(delmember);
+      await this.query('SET FOREIGN_KEY_CHECKS=1')
+
+      return delDayData;
+    }
 }

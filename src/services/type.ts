@@ -10,7 +10,7 @@ enum OnDutyType {
 }
 
 enum statisticalType {
-  all = 'all',
+  all = "all",
   true = 1,
   false = 0,
 }
@@ -27,6 +27,16 @@ interface GroupMember {
   Sun: Array<string>;
   maintain: Array<string>;
   maintain_afternoon: Array<string>;
+}
+
+interface DeleteMember {
+  onduty_date: Date;
+  isMaintain: number;
+}
+
+interface AgainOndutyDay {
+  onduty_date: string;
+  isMaintain: boolean;
 }
 
 interface MemberOnDutyDateObj {
@@ -98,4 +108,6 @@ export {
   getOnDutyType,
   MemberOnDutyDate,
   statisticalType,
+  DeleteMember,
+  AgainOndutyDay,
 };

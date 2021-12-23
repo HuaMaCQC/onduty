@@ -25,4 +25,7 @@ router.get("/onduty/list/csv", controller.getCsv);
 // 取得特定使用者csv
 router.get("/onduty/list/filter/csv", controller.getCsvByName);
 
+// 刪除特定使用者
+router.delete("/onduty/delete", controller.deleteMember);
+
 export default router;

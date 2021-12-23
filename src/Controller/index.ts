@@ -3,7 +3,7 @@ import { Context } from "koa";
 import dayjs from "dayjs";
 import { plainToClassFromExist } from "class-transformer";
 import { validate, ValidationError } from "class-validator";
-import { addCsv, ListData, addMember } from ".././validatorData";
+import { addCsv, ListData, addMember, delMember } from ".././validatorData";
 import { statisticalType } from "../services/type";
 import services from "../services";
 
@@ -68,9 +68,7 @@ export default class Controller {
   // api = /onduty/add 新增組員
   public static async addMember(ctx: Context): Promise<void> {
     const d = plainToClassFromExist(new addMember(), ctx.request.query);
-    console.log(d);
     const errors: ValidationError[] = await validate(d);
-    console.log(d.name,1);
     if (errors.length > 0 || !d.name) {
       ctx.state = 400;
       ctx.body = errors;
@@ -82,6 +80,37 @@ export default class Controller {
     ctx.state = 200;
     ctx.body = 'ok';
   }
+
+    // api = /onduty/add 新增組員
+    public static async deleteMember(ctx: Context): Promise<void> {
+      const d = plainToClassFromExist(new delMember(), ctx.request.query);
+      const errors: ValidationError[] = await validate(d);
+      if (errors.length > 0 || !d.username) {
+        ctx.state = 400;
+        ctx.body = errors;
+  
+        return;
+      }
+      
+      const data = await services.deleteMember(d.username, d?.startDay, d?.endDay);
+      const groupMember = await services.getGroupMember(
+        d?.startDay,
+        d?.endDay
+      );
+
+      const csv = data.reduce((accumulator, currentValue) => {
+        const name = groupMember.find(d => d.id === currentValue.id)?.name;
+        if(currentValue.isMaintain){
+          const afternoon = groupMember.find(d => d.id === currentValue.maintain_afternoon)?.name;
+          const content = `\r\n#${name}/${afternoon},${currentValue.onduty_date}`;
+          return `${accumulator}${content}`;
+        }
+
+        return `${accumulator}${`\r\n#${name},${currentValue.onduty_date}`}`;
+      }, "\uFEFF Subject,Start Date")
+      ctx.state = 200;
+      ctx.body = csv;
+    }
 
   // api = /onduty/list 查看全部資料
   public static async list(ctx: Context): Promise<void> {
